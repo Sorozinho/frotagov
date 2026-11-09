@@ -24,7 +24,7 @@ spl_autoload_register(function (string $classe): void {
 session_start();
 
 /** Escapa texto antes de mostrar no HTML (evita XSS). */
-function e(mixed $valor): string
+function e($valor): string
 {
     return htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
 }
@@ -48,7 +48,7 @@ function flash(string $tipo, string $mensagem): void
 }
 
 /** Redireciona e encerra o script. */
-function redirecionar(string $url): never
+function redirecionar(string $url): void
 {
     header('Location: ' . $url);
     exit;

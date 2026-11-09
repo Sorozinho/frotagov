@@ -9,9 +9,12 @@ use Throwable;
 
 class AbastecimentoRepositorio extends RepositorioPdo
 {
-    public function __construct(PDO $pdo, private VeiculoRepositorio $veiculos)
+    private VeiculoRepositorio $veiculos;
+
+    public function __construct(PDO $pdo, VeiculoRepositorio $veiculos)
     {
-        parent::__construct($pdo);
+        parent::__construct($pdo); // a classe mãe guarda o PDO
+        $this->veiculos = $veiculos;
     }
 
     protected function tabela(): string

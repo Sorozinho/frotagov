@@ -97,15 +97,17 @@ class VeiculoRepositorio extends RepositorioPdo
      */
     public static function montar(array $l): Veiculo
     {
-        $veiculo = match ($l['tipo']) {
-            'automovel' => new Automovel(
+        if ($l['tipo'] === 'automovel') {
+            $veiculo = new Automovel(
                 (int) $l['secretaria_id'], $l['descricao'], (float) $l['medidor_atual'], (string) $l['placa'], (int) $l['id']
-            ),
-            'maquina' => new MaquinaPesada(
+            );
+        } elseif ($l['tipo'] === 'maquina') {
+            $veiculo = new MaquinaPesada(
                 (int) $l['secretaria_id'], $l['descricao'], (float) $l['medidor_atual'], (int) $l['id']
-            ),
-            default => throw new UnexpectedValueException('Tipo de veículo desconhecido: ' . $l['tipo']),
-        };
+            );
+        } else {
+            throw new UnexpectedValueException('Tipo de veículo desconhecido: ' . $l['tipo']);
+        }
         $veiculo->definirDatasAuditoria($l['criado_em'], $l['atualizado_em']);
         return $veiculo;
     }

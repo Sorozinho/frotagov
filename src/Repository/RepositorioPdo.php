@@ -18,8 +18,11 @@ use PDOException;
  */
 abstract class RepositorioPdo implements Repositorio
 {
-    public function __construct(protected PDO $pdo)
+    protected PDO $pdo;
+
+    public function __construct(PDO $pdo)
     {
+        $this->pdo = $pdo;
     }
 
     /** Nome da tabela no banco. Cada filha informa a sua. */
