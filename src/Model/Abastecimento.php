@@ -77,7 +77,8 @@ class Abastecimento
         if (!$d || $d->format('Y-m-d') !== $data) {
             throw new InvalidArgumentException('Data inválida.');
         }
-        if ($d > new DateTimeImmutable('today')) {
+        // Compara como texto: no formato ano-mês-dia a ordem alfabética é a ordem das datas
+        if ($data > date('Y-m-d')) {
             throw new InvalidArgumentException('A data do abastecimento não pode ser no futuro.');
         }
         $this->data = $data;

@@ -21,6 +21,9 @@ spl_autoload_register(function (string $classe): void {
     }
 });
 
+// Horário de Brasília (sem isso o PHP do XAMPP usa o fuso da Alemanha)
+date_default_timezone_set('America/Sao_Paulo');
+
 session_start();
 
 /** Escapa texto antes de mostrar no HTML (evita XSS). */
