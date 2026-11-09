@@ -1,0 +1,8 @@
+# Configuração local com senha do banco
+config/config.php
+
+# Arquivos do sistema/editor
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
