@@ -7,63 +7,130 @@ use PDO;
 
 /**
  * Consultas de relatório (somente leitura).
- * Usa GROUP BY e SUM no próprio banco, que é mais rápido que somar no PHP.
+ * Cada consulta soma os valores no próprio banco (SUM + GROUP BY)
+ * e o PHP só junta os resultados em uma lista para a tela.
  */
 class RelatorioRepositorio
 {
-    public function __construct(private PDO $pdo)
+    private PDO $pdo;
+
+    public function __construct(PDO $pdo)
     {
+        $this->pdo = $pdo;
     }
 
     /**
-     * Custo de combustível e manutenção por secretaria no período.
-     * @return array<int, array{secretaria:string, sigla:string, combustivel:float, manutencao:float}>
+     * Custo de combustível e manutenção de cada secretaria no período.
+     * Devolve uma lista de arrays com: secretaria, sigla, combustivel, manutencao.
      */
     public function custoPorSecretaria(string $inicio, string $fim): array
     {
-        $sql = "SELECT s.nome AS secretaria, s.sigla,
-                       COALESCE((SELECT SUM(a.valor_total)
-                                   FROM abastecimento a
-                                   JOIN veiculo v ON v.id = a.veiculo_id
-                                  WHERE v.secretaria_id = s.id
-                                    AND a.data BETWEEN :i1 AND :f1), 0) AS combustivel,
-                       COALESCE((SELECT SUM(it.quantidade * it.valor_unitario)
-                                   FROM item_servico it
-                                   JOIN ordem_manutencao o ON o.id = it.ordem_id
-                                   JOIN veiculo v ON v.id = o.veiculo_id
-                                  WHERE v.secretaria_id = s.id
-                                    AND o.data BETWEEN :i2 AND :f2), 0) AS manutencao
-                  FROM secretaria s
-                 ORDER BY s.nome";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':i1' => $inicio, ':f1' => $fim, ':i2' => $inicio, ':f2' => $fim]);
-        return $stmt->fetchAll();
+        // Total de combustível agrupado por secretaria
+        $combustivel = $this->somar(
+            'SELECT v.secretaria_id AS chave, SUM(a.valor_total) AS total
+               FROM abastecimento a
+               JOIN veiculo v ON v.id = a.veiculo_id
+              WHERE a.data BETWEEN :inicio AND :fim
+              GROUP BY v.secretaria_id',
+            $inicio,
+            $fim
+        );
+
+        // Total de manutenção (quantidade x valor de cada item) agrupado por secretaria
+        $manutencao = $this->somar(
+            'SELECT v.secretaria_id AS chave, SUM(i.quantidade * i.valor_unitario) AS total
+               FROM item_servico i
+               JOIN ordem_manutencao o ON o.id = i.ordem_id
+               JOIN veiculo v ON v.id = o.veiculo_id
+              WHERE o.data BETWEEN :inicio AND :fim
+              GROUP BY v.secretaria_id',
+            $inicio,
+            $fim
+        );
+
+        // Lista todas as secretarias, inclusive as que não gastaram nada (ficam com 0)
+        $secretarias = $this->pdo->query('SELECT id, nome, sigla FROM secretaria ORDER BY nome')->fetchAll();
+
+        $resultado = [];
+        foreach ($secretarias as $s) {
+            $resultado[] = [
+                'secretaria'  => $s['nome'],
+                'sigla'       => $s['sigla'],
+                'combustivel' => $combustivel[$s['id']] ?? 0.0,
+                'manutencao'  => $manutencao[$s['id']] ?? 0.0,
+            ];
+        }
+        return $resultado;
     }
 
     /**
-     * Custo por veículo no período.
-     * @return array<int, array{descricao:string, placa:?string, sigla:string, litros:float, combustivel:float, manutencao:float}>
+     * Custo de cada veículo no período.
+     * Devolve uma lista de arrays com: descricao, placa, sigla, litros, combustivel, manutencao.
      */
     public function custoPorVeiculo(string $inicio, string $fim): array
     {
-        $sql = "SELECT v.descricao, v.placa, s.sigla,
-                       COALESCE((SELECT SUM(a.litros) FROM abastecimento a
-                                  WHERE a.veiculo_id = v.id AND a.data BETWEEN :i1 AND :f1), 0) AS litros,
-                       COALESCE((SELECT SUM(a.valor_total) FROM abastecimento a
-                                  WHERE a.veiculo_id = v.id AND a.data BETWEEN :i2 AND :f2), 0) AS combustivel,
-                       COALESCE((SELECT SUM(it.quantidade * it.valor_unitario)
-                                   FROM item_servico it
-                                   JOIN ordem_manutencao o ON o.id = it.ordem_id
-                                  WHERE o.veiculo_id = v.id AND o.data BETWEEN :i3 AND :f3), 0) AS manutencao
-                  FROM veiculo v
-                  JOIN secretaria s ON s.id = v.secretaria_id
-                 ORDER BY s.sigla, v.descricao";
+        $litros = $this->somar(
+            'SELECT veiculo_id AS chave, SUM(litros) AS total
+               FROM abastecimento
+              WHERE data BETWEEN :inicio AND :fim
+              GROUP BY veiculo_id',
+            $inicio,
+            $fim
+        );
+
+        $combustivel = $this->somar(
+            'SELECT veiculo_id AS chave, SUM(valor_total) AS total
+               FROM abastecimento
+              WHERE data BETWEEN :inicio AND :fim
+              GROUP BY veiculo_id',
+            $inicio,
+            $fim
+        );
+
+        $manutencao = $this->somar(
+            'SELECT o.veiculo_id AS chave, SUM(i.quantidade * i.valor_unitario) AS total
+               FROM item_servico i
+               JOIN ordem_manutencao o ON o.id = i.ordem_id
+              WHERE o.data BETWEEN :inicio AND :fim
+              GROUP BY o.veiculo_id',
+            $inicio,
+            $fim
+        );
+
+        $veiculos = $this->pdo->query(
+            'SELECT v.id, v.descricao, v.placa, s.sigla
+               FROM veiculo v
+               JOIN secretaria s ON s.id = v.secretaria_id
+              ORDER BY s.sigla, v.descricao'
+        )->fetchAll();
+
+        $resultado = [];
+        foreach ($veiculos as $v) {
+            $resultado[] = [
+                'descricao'   => $v['descricao'],
+                'placa'       => $v['placa'],
+                'sigla'       => $v['sigla'],
+                'litros'      => $litros[$v['id']] ?? 0.0,
+                'combustivel' => $combustivel[$v['id']] ?? 0.0,
+                'manutencao'  => $manutencao[$v['id']] ?? 0.0,
+            ];
+        }
+        return $resultado;
+    }
+
+    /**
+     * Roda uma consulta de soma no período e devolve um array [chave => total].
+     * A consulta precisa ter as colunas "chave" e "total" e os parâmetros :inicio e :fim.
+     */
+    private function somar(string $sql, string $inicio, string $fim): array
+    {
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            ':i1' => $inicio, ':f1' => $fim,
-            ':i2' => $inicio, ':f2' => $fim,
-            ':i3' => $inicio, ':f3' => $fim,
-        ]);
-        return $stmt->fetchAll();
+        $stmt->execute([':inicio' => $inicio, ':fim' => $fim]);
+
+        $totais = [];
+        foreach ($stmt->fetchAll() as $linha) {
+            $totais[$linha['chave']] = (float) $linha['total'];
+        }
+        return $totais;
     }
 }
