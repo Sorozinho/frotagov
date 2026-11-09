@@ -63,7 +63,11 @@ class VeiculoRepositorio extends RepositorioPdo
     public function listarTodos(): array
     {
         $linhas = $this->pdo->query('SELECT * FROM veiculo ORDER BY descricao')->fetchAll();
-        return array_map(fn(array $l) => self::montar($l), $linhas);
+        $lista  = [];
+        foreach ($linhas as $linha) {
+            $lista[] = self::montar($linha);
+        }
+        return $lista;
     }
 
     /** @return Veiculo[] */
@@ -71,7 +75,11 @@ class VeiculoRepositorio extends RepositorioPdo
     {
         $stmt = $this->pdo->prepare('SELECT * FROM veiculo WHERE secretaria_id = :s ORDER BY descricao');
         $stmt->execute([':s' => $secretariaId]);
-        return array_map(fn(array $l) => self::montar($l), $stmt->fetchAll());
+        $lista = [];
+        foreach ($stmt->fetchAll() as $linha) {
+            $lista[] = self::montar($linha);
+        }
+        return $lista;
     }
 
     /**

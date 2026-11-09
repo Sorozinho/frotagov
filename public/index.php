@@ -27,7 +27,12 @@ $mes = $pdo->query(
 )->fetch();
 
 // Filtra os que estão perto da revisão (polimorfismo: cada tipo tem seu intervalo)
-$alertas = array_filter($veiculos, fn($v) => $v->revisaoProxima());
+$alertas = [];
+foreach ($veiculos as $v) {
+    if ($v->revisaoProxima()) {
+        $alertas[] = $v;
+    }
+}
 
 $titulo = 'Painel da frota';
 require __DIR__ . '/../templates/topo.php';

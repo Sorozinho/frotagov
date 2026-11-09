@@ -84,7 +84,11 @@ class AbastecimentoRepositorio extends RepositorioPdo
     public function listarTodos(): array
     {
         $linhas = $this->pdo->query($this->sqlBase() . ' ORDER BY a.data DESC, a.id DESC')->fetchAll();
-        return array_map(fn(array $l) => $this->montar($l), $linhas);
+        $lista  = [];
+        foreach ($linhas as $linha) {
+            $lista[] = $this->montar($linha);
+        }
+        return $lista;
     }
 
     /** @return Abastecimento[] */
@@ -92,7 +96,11 @@ class AbastecimentoRepositorio extends RepositorioPdo
     {
         $stmt = $this->pdo->prepare($this->sqlBase() . ' WHERE a.veiculo_id = :v ORDER BY a.medidor');
         $stmt->execute([':v' => $veiculoId]);
-        return array_map(fn(array $l) => $this->montar($l), $stmt->fetchAll());
+        $lista = [];
+        foreach ($stmt->fetchAll() as $linha) {
+            $lista[] = $this->montar($linha);
+        }
+        return $lista;
     }
 
     /**

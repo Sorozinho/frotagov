@@ -98,7 +98,11 @@ class OrdemManutencaoRepositorio extends RepositorioPdo
     public function listarTodos(): array
     {
         $linhas = $this->pdo->query('SELECT * FROM ordem_manutencao ORDER BY data DESC, id DESC')->fetchAll();
-        return array_map(fn(array $l) => $this->montar($l), $linhas);
+        $lista  = [];
+        foreach ($linhas as $linha) {
+            $lista[] = $this->montar($linha);
+        }
+        return $lista;
     }
 
     private function montar(array $l): OrdemManutencao

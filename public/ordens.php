@@ -62,18 +62,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if (isset($_GET['editar']) && $erro === null) {
     $o = $repo->buscarPorId((int) $_GET['editar']);
     if ($o) {
+        $itens = [];
+        foreach ($o->getItens() as $i) {
+            $itens[] = [
+                'tipo'           => $i->getTipo(),
+                'descricao'      => $i->getDescricao(),
+                'quantidade'     => $i->getQuantidade(),
+                'valor_unitario' => $i->getValorUnitario(),
+            ];
+        }
         $form = [
             'id'         => $o->getId(),
             'veiculo_id' => $o->getVeiculo()->getId(),
             'data'       => $o->getData(),
             'oficina'    => $o->getOficina(),
             'descricao'  => $o->getDescricao(),
-            'itens'      => array_map(fn($i) => [
-                'tipo'           => $i->getTipo(),
-                'descricao'      => $i->getDescricao(),
-                'quantidade'     => $i->getQuantidade(),
-                'valor_unitario' => $i->getValorUnitario(),
-            ], $o->getItens()),
+            'itens'      => $itens,
         ];
     }
 }

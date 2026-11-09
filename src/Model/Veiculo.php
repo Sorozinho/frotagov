@@ -74,16 +74,22 @@ abstract class Veiculo
             return null; // precisa de pelo menos 2 abastecimentos
         }
 
-        usort($abastecimentos, fn(Abastecimento $a, Abastecimento $b) => $a->getMedidor() <=> $b->getMedidor());
-
+        // Procura o abastecimento de menor e o de maior medidor e soma os litros de todos
         $primeiro = $abastecimentos[0];
-        $ultimo   = $abastecimentos[count($abastecimentos) - 1];
-        $uso      = $ultimo->getMedidor() - $primeiro->getMedidor();
-
-        $litros = 0.0;
-        foreach (array_slice($abastecimentos, 1) as $abastecimento) {
+        $ultimo   = $abastecimentos[0];
+        $litros   = 0.0;
+        foreach ($abastecimentos as $abastecimento) {
+            if ($abastecimento->getMedidor() < $primeiro->getMedidor()) {
+                $primeiro = $abastecimento;
+            }
+            if ($abastecimento->getMedidor() > $ultimo->getMedidor()) {
+                $ultimo = $abastecimento;
+            }
             $litros += $abastecimento->getLitros();
         }
+
+        $uso    = $ultimo->getMedidor() - $primeiro->getMedidor();
+        $litros = $litros - $primeiro->getLitros(); // o primeiro só "zera" o tanque, não conta
 
         if ($uso <= 0 || $litros <= 0) {
             return null;

@@ -45,10 +45,11 @@ if (isset($_GET['editar']) && $erro === null) {
 }
 
 $veiculoRepo  = new VeiculoRepositorio($pdo);
-$secretarias  = array_map(
-    fn(Secretaria $s) => $repo->buscarComVeiculos($s->getId(), $veiculoRepo),
-    $repo->listarTodos()
-);
+// Carrega cada secretaria já com a lista de veículos dela (agregação)
+$secretarias  = [];
+foreach ($repo->listarTodos() as $s) {
+    $secretarias[] = $repo->buscarComVeiculos($s->getId(), $veiculoRepo);
+}
 
 $titulo = 'Secretarias';
 require __DIR__ . '/../templates/topo.php';
