@@ -43,6 +43,8 @@ Centralizar o registro de abastecimentos e ordens de manutenção dos veículos 
 
 Diagramas completos em [`docs/diagramas.md`](docs/diagramas.md).
 
+Artigo técnico-científico: [`docs/Artigo_FrotaGov.pdf`](docs/Artigo_FrotaGov.pdf) (também em `.docx`).
+
 ## Segurança e integridade
 
 - Consultas com **prepared statements** (PDO) — proteção contra SQL Injection
@@ -63,7 +65,8 @@ frotagov/
 │   ├── schema.sql         # cria o banco e as tabelas
 │   └── seed.sql           # dados fictícios para teste
 ├── docs/
-│   └── diagramas.md       # UML de classes e modelo ER
+│   ├── diagramas.md       # UML de classes e modelo ER
+│   └── Artigo_FrotaGov.*  # artigo (PDF e Word)
 ├── public/                # páginas acessadas pelo navegador
 │   ├── index.php, secretarias.php, veiculos.php,
 │   ├── abastecimentos.php, ordens.php, relatorio.php
